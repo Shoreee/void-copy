@@ -30,7 +30,9 @@ export class MiscWorkbenchContribs extends Disposable implements IWorkbenchContr
 		const alreadyDeleted = this.storageService.get(deleteExtensionsStorageId, StorageScope.APPLICATION)
 		if (!alreadyDeleted) {
 			this.storageService.store(deleteExtensionsStorageId, 'true', StorageScope.APPLICATION, StorageTarget.MACHINE)
-			this.extensionTransferService.deleteBlacklistExtensions(os)
+			this.extensionTransferService.deleteBlacklistExtensions(os).catch(err => {
+				console.error('Error deleting blacklist extensions:', err)
+			})
 		}
 
 

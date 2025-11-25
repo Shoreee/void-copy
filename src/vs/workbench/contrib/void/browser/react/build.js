@@ -103,7 +103,7 @@ if (isWatch) {
 		'--watch', 'src',
 		'--ext', 'ts,tsx,css',
 		'--exec',
-		'npx scope-tailwind ./src -o src2/ -s void-scope -c styles.css -p "void-"'
+		'npx scope-tailwind ./src -o src2/ -s void-scope -c styles.css -p "void-" && echo "SCOPE_TAILWIND_DONE"'
 	]);
 
 	const tsupWatcher = spawn('npx', [
@@ -116,6 +116,17 @@ if (isWatch) {
 		// If the output mentions "styles.css", trigger the save:
 		if (data.toString().includes('styles.css')) {
 			saveStylesFile();
+		}
+		// If scope-tailwind is done, trigger tsup rebuild
+		if (data.toString().includes('SCOPE_TAILWIND_DONE')) {
+			console.log('[watch] Scope-tailwind completed, triggering tsup rebuild...');
+			// Touch a file to trigger tsup watcher
+			try {
+				const now = new Date();
+				fs.utimesSync('src2/sidebar-tsx/index.tsx', now, now);
+			} catch (err) {
+				console.log('[watch] Could not trigger tsup rebuild');
+			}
 		}
 	});
 

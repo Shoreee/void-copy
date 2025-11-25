@@ -38,118 +38,10 @@ import { removeMCPToolNamePrefix } from '../../../../common/mcpServiceTypes.js';
 
 
 
-export const IconX = ({ size, className = '', ...props }: { size: number, className?: string } & React.SVGProps<SVGSVGElement>) => {
-	return (
-		<svg
-			xmlns='http://www.w3.org/2000/svg'
-			width={size}
-			height={size}
-			viewBox='0 0 24 24'
-			fill='none'
-			stroke='currentColor'
-			className={className}
-			{...props}
-		>
-			<path
-				strokeLinecap='round'
-				strokeLinejoin='round'
-				d='M6 18 18 6M6 6l12 12'
-			/>
-		</svg>
-	);
-};
-
-const IconArrowUp = ({ size, className = '' }: { size: number, className?: string }) => {
-	return (
-		<svg
-			width={size}
-			height={size}
-			className={className}
-			viewBox="0 0 20 20"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path
-				fill="black"
-				fillRule="evenodd"
-				clipRule="evenodd"
-				d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
-			></path>
-		</svg>
-	);
-};
-
-
-const IconSquare = ({ size, className = '' }: { size: number, className?: string }) => {
-	return (
-		<svg
-			className={className}
-			stroke="black"
-			fill="black"
-			strokeWidth="0"
-			viewBox="0 0 24 24"
-			width={size}
-			height={size}
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<rect x="2" y="2" width="20" height="20" rx="4" ry="4" />
-		</svg>
-	);
-};
-
-
-export const IconWarning = ({ size, className = '' }: { size: number, className?: string }) => {
-	return (
-		<svg
-			className={className}
-			stroke="currentColor"
-			fill="currentColor"
-			strokeWidth="0"
-			viewBox="0 0 16 16"
-			width={size}
-			height={size}
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path
-				fillRule="evenodd"
-				clipRule="evenodd"
-				d="M7.56 1h.88l6.54 12.26-.44.74H1.44L1 13.26 7.56 1zM8 2.28L2.28 13H13.7L8 2.28zM8.625 12v-1h-1.25v1h1.25zm-1.25-2V6h1.25v4h-1.25z"
-			/>
-		</svg>
-	);
-};
-
-
-export const IconLoading = ({ className = '' }: { className?: string }) => {
-
-	const [loadingText, setLoadingText] = useState('.');
-
-	useEffect(() => {
-		let intervalId;
-
-		// Function to handle the animation
-		const toggleLoadingText = () => {
-			if (loadingText === '...') {
-				setLoadingText('.');
-			} else {
-				setLoadingText(loadingText + '.');
-			}
-		};
-
-		// Start the animation loop
-		intervalId = setInterval(toggleLoadingText, 300);
-
-		// Cleanup function to clear the interval when component unmounts
-		return () => clearInterval(intervalId);
-	}, [loadingText, setLoadingText]);
-
-	return <div className={`${className}`}>{loadingText}</div>;
-
-}
+import { IconX, IconArrowUp, IconSquare, IconWarning, IconLoading, IconChat, IconAsk, IconAgent } from '../icons/custom-icons.js';
 
 
 
-// SLIDER ONLY:
 const ReasoningOptionSlider = ({ featureName }: { featureName: FeatureName }) => {
 	const accessor = useAccessor()
 
@@ -247,43 +139,127 @@ const ReasoningOptionSlider = ({ featureName }: { featureName: FeatureName }) =>
 
 
 
-const nameOfChatMode = {
-	'normal': 'Chat',
-	'gather': 'Gather',
-	'agent': 'Agent',
+const modeAppearanceConfig = {
+	'chat': {
+		name: 'Chat',
+		icon: IconChat,
+		backgroundColor: '#7E93C1'
+	},
+	'ask': {
+		name: 'Ask',
+		icon: IconAsk,
+		backgroundColor: '#598F59'
+	},
+	'agent': {
+		name: 'Agent',
+		icon: IconAgent,
+		backgroundColor: '#70598F'
+	}
 }
 
-const detailOfChatMode = {
-	'normal': 'Normal chat',
-	'gather': 'Reads files, but can\'t edit',
-	'agent': 'Edits files and uses tools',
-}
 
 
-const ChatModeDropdown = ({ className }: { className: string }) => {
+const ChatModeDropdownWithIcons = ({ className }: { className: string }) => {
 	const accessor = useAccessor()
-
 	const voidSettingsService = accessor.get('IVoidSettingsService')
 	const settingsState = useSettingsState()
 
-	const options: ChatMode[] = useMemo(() => ['normal', 'gather', 'agent'], [])
+	const [isOpen, setIsOpen] = useState(false)
+	const currentMode = settingsState.globalSettings.chatMode ?? 'chat'
+	const config = modeAppearanceConfig[currentMode]
+	const Icon = config.icon
+
+	const options: ChatMode[] = useMemo(() => ['chat', 'ask', 'agent'], [])
+	const dropdownRef = useRef<HTMLDivElement>(null)
+	const [placement, setPlacement] = useState<'top' | 'bottom'>('top')
+
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+				setIsOpen(false)
+			}
+		}
+
+		if (isOpen) {
+			// Determine placement based on available space
+			if (dropdownRef.current) {
+				const rect = dropdownRef.current.getBoundingClientRect()
+				const windowHeight = window.innerHeight
+				const spaceBelow = windowHeight - rect.bottom
+				const spaceAbove = rect.top
+
+				// If space below is less than 150px and space above is greater, show on top
+				// Otherwise show on bottom (default)
+				if (spaceBelow < 150 && spaceAbove > 150) {
+					setPlacement('top')
+				} else {
+					setPlacement('bottom')
+				}
+			}
+
+			document.addEventListener('mousedown', handleClickOutside)
+			return () => document.removeEventListener('mousedown', handleClickOutside)
+		}
+	}, [isOpen])
 
 	const onChangeOption = useCallback((newVal: ChatMode) => {
 		voidSettingsService.setGlobalSetting('chatMode', newVal)
+		setIsOpen(false)
 	}, [voidSettingsService])
 
-	return <VoidCustomDropdownBox
-		className={className}
-		options={options}
-		selectedOption={settingsState.globalSettings.chatMode}
-		onChangeOption={onChangeOption}
-		getOptionDisplayName={(val) => nameOfChatMode[val]}
-		getOptionDropdownName={(val) => nameOfChatMode[val]}
-		getOptionDropdownDetail={(val) => detailOfChatMode[val]}
-		getOptionsEqual={(a, b) => a === b}
-	/>
+	return (
+		<div ref={dropdownRef} className={`relative ${className}`}>
+			{/* Trigger button */}
+			<button
+				onClick={() => setIsOpen(!isOpen)}
+				className={`
+					flex items-center gap-1 px-1.5 py-0.5 rounded text-xs
+					hover:brightness-110 transition-all cursor-pointer w-full justify-center
+				`}
+				style={{
+					backgroundColor: config.backgroundColor,
+					color: '#ffffff'
+				}}
+			>
+				<Icon size={14} />
+				<span>{config.name}</span>
+				<ChevronRight className={`ml-1 h-3 w-3 transition-transform ${isOpen ? '-rotate-90' : 'rotate-90'}`} />
+			</button>
 
+			{/* Dropdown menu */}
+			{isOpen && (
+				<div className={`absolute left-0 bg-void-bg-1 border border-void-border-2 rounded shadow-lg z-50 min-w-24 overflow-hidden ${placement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+					{options.map(mode => {
+						const modeConfigItem = modeAppearanceConfig[mode]
+						const ModeIcon = modeConfigItem.icon
+						const isSelected = currentMode === mode
+
+						return (
+							<button
+								key={mode}
+								onClick={() => onChangeOption(mode)}
+								className={`
+									flex items-center gap-1 px-1.5 py-1 text-xs w-full text-left
+									hover:bg-void-bg-3 transition-colors
+									${isSelected ? 'text-white' : 'text-void-fg-1'}
+								`}
+								style={isSelected ? {
+									backgroundColor: modeConfigItem.backgroundColor,
+									color: '#ffffff'
+								} : {}}
+							>
+								<ModeIcon size={14} />
+								<span className="font-medium">{modeConfigItem.name}</span>
+							</button>
+						)
+					})}
+				</div>
+			)}
+		</div>
+	)
 }
+
 
 
 
@@ -306,6 +282,7 @@ interface VoidChatAreaProps {
 	showSelections?: boolean;
 	showProspectiveSelections?: boolean;
 	loadingIcon?: React.ReactNode;
+	mode?: ChatMode;
 
 	selections?: StagingSelectionItem[]
 	setSelections?: (s: StagingSelectionItem[]) => void
@@ -336,6 +313,7 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 	setSelections,
 	featureName,
 	loadingIcon,
+	mode = 'chat',
 }) => {
 	return (
 		<div
@@ -347,7 +325,7 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
                 bg-void-bg-1
 				transition-all duration-200
 				border border-void-border-3 focus-within:border-void-border-1 hover:border-void-border-1
-				max-h-[80vh] overflow-y-auto
+				max-h-[80vh]
                 ${className}
             `}
 			onClick={(e) => {
@@ -386,23 +364,26 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 					<div className='flex flex-col gap-y-1'>
 						<ReasoningOptionSlider featureName={featureName} />
 
-						<div className='flex items-center flex-wrap gap-x-2 gap-y-1 text-nowrap '>
-							{featureName === 'Chat' && <ChatModeDropdown className='text-xs text-void-fg-3 bg-void-bg-1 border border-void-border-2 rounded py-0.5 px-1' />}
-							<ModelDropdown featureName={featureName} className='text-xs text-void-fg-3 bg-void-bg-1 rounded' />
+
+						<div className='flex items-center gap-x-2 gap-y-1 text-nowrap w-full'>
+							{featureName === 'Chat' && <ChatModeDropdownWithIcons className='flex-1' />}
+							<ModelDropdown featureName={featureName} className='flex-[2] text-xs text-void-fg-3 bg-void-bg-1 rounded min-w-0' />
 						</div>
 					</div>
 				)}
+
 
 				<div className="flex items-center gap-2">
 
 					{isStreaming && loadingIcon}
 
 					{isStreaming ? (
-						<ButtonStop onClick={onAbort} />
+						<ButtonStop onClick={onAbort} mode={mode} />
 					) : (
 						<ButtonSubmit
 							onClick={onSubmit}
 							disabled={isDisabled}
+							mode={mode}
 						/>
 					)}
 				</div>
@@ -417,14 +398,28 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement>
 const DEFAULT_BUTTON_SIZE = 22;
-export const ButtonSubmit = ({ className, disabled, ...props }: ButtonProps & Required<Pick<ButtonProps, 'disabled'>>) => {
+
+export const ButtonSubmit = ({ className, disabled, mode = 'chat', ...props }: ButtonProps & { mode?: ChatMode } & Required<Pick<ButtonProps, 'disabled'>>) => {
+
+	const config = modeAppearanceConfig[mode] || modeAppearanceConfig['chat']
+
+	const getButtonStyle = () => {
+		return {
+			backgroundColor: config.backgroundColor,
+			color: '#ffffff',
+			opacity: disabled ? 0.5 : 1
+		}
+	}
 
 	return <button
 		type='button'
 		className={`rounded-full flex-shrink-0 flex-grow-0 flex items-center justify-center
-			${disabled ? 'bg-vscode-disabled-fg cursor-default' : 'bg-white cursor-pointer'}
+			${disabled
+				? 'cursor-default'
+				: 'cursor-pointer hover:brightness-110'}
 			${className}
 		`}
+		style={getButtonStyle()}
 		// data-tooltip-id='void-tooltip'
 		// data-tooltip-content={'Send'}
 		// data-tooltip-place='left'
@@ -434,16 +429,21 @@ export const ButtonSubmit = ({ className, disabled, ...props }: ButtonProps & Re
 	</button>
 }
 
-export const ButtonStop = ({ className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) => {
+export const ButtonStop = ({ className, mode = 'chat', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { mode?: ChatMode }) => {
+	const config = modeAppearanceConfig[mode] || modeAppearanceConfig['chat']
+
 	return <button
 		className={`rounded-full flex-shrink-0 flex-grow-0 cursor-pointer flex items-center justify-center
-			bg-white
+			hover:brightness-110
 			${className}
 		`}
+		style={{
+			backgroundColor: config.backgroundColor,
+		}}
 		type='button'
 		{...props}
 	>
-		<IconSquare size={DEFAULT_BUTTON_SIZE} className="stroke-[3] p-[7px]" />
+		<IconSquare size={DEFAULT_BUTTON_SIZE} className="stroke-[3] p-[7px]" style={{ fill: '#ffffff', stroke: '#ffffff' }} />
 	</button>
 }
 
@@ -1021,6 +1021,7 @@ const UserMessageComponent = ({ chatMessage, messageIdx, isCheckpointGhost, curr
 
 	const accessor = useAccessor()
 	const chatThreadsService = accessor.get('IChatThreadService')
+	const settingsState = useSettingsState()
 
 	// global state
 	let isBeingEdited = false
@@ -1148,6 +1149,7 @@ const UserMessageComponent = ({ chatMessage, messageIdx, isCheckpointGhost, curr
 			showProspectiveSelections={false}
 			selections={stagingSelections}
 			setSelections={setStagingSelections}
+			mode={settingsState.globalSettings.chatMode ?? 'chat'}
 		>
 			<VoidInputBox2
 				enableAtToMention
@@ -3074,6 +3076,7 @@ export const SidebarChat = () => {
 		selections={selections}
 		setSelections={setSelections}
 		onClickAnywhere={() => { textAreaRef.current?.focus() }}
+		mode={settingsState.globalSettings.chatMode ?? 'chat'}
 	>
 		<VoidInputBox2
 			enableAtToMention

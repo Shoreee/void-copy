@@ -6,7 +6,7 @@
 	"features": {},
 	"containerEnv": {
 		"DISPLAY": "", // Allow the Dev Containers extension to set DISPLAY, post-create.sh will add it back in ~/.bashrc and ~/.zshrc if not set.
-		"NODE_OPTIONS": "--max-old-space-size=8192"
+		"NODE_OPTIONS": "--max-old-space-size=16384"
 	},
 	"overrideCommand": false,
 	"privileged": true,
