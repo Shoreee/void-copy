@@ -18,7 +18,7 @@ import { AnthropicLLMChatMessage, GeminiLLMChatMessage, LLMChatMessage, LLMFIMMe
 import { ChatMode, displayInfoOfProviderName, ModelSelectionOptions, OverridesOfModel, ProviderName, SettingsOfProvider } from '../../common/voidSettingsTypes.js';
 import { getSendableReasoningInfo, getModelCapabilities, getProviderCapabilities, defaultProviderSettings, getReservedOutputTokenSpace } from '../../common/modelCapabilities.js';
 import { extractReasoningWrapper, extractXMLToolsWrapper } from './extractGrammar.js';
-import { availableTools, InternalToolInfo } from '../../common/prompt/prompts.js';
+import { availableTools, InternalToolInfo } from '../../common/prompt/index.js';
 import { generateUuid } from '../../../../../base/common/uuid.js';
 
 const getGoogleApiKey = async () => {
@@ -251,7 +251,7 @@ const rawToolCallObjOfParamsStr = (name: string, toolParamsStr: string, id: stri
 	if (input === null) return null
 	if (typeof input !== 'object') return null
 
-	const rawParams: RawToolParamsObj = input
+	const rawParams = input as RawToolParamsObj
 	return { id, name, rawParams, doneParams: Object.keys(rawParams), isDone: true }
 }
 
@@ -262,7 +262,7 @@ const rawToolCallObjOfAnthropicParams = (toolBlock: Anthropic.Messages.ToolUseBl
 	if (input === null) return null
 	if (typeof input !== 'object') return null
 
-	const rawParams: RawToolParamsObj = input
+	const rawParams = input as RawToolParamsObj
 	return { id, name, rawParams, doneParams: Object.keys(rawParams), isDone: true }
 }
 

@@ -1,6 +1,5 @@
 import { URI } from '../../../../base/common/uri.js'
 import { RawMCPToolCall } from './mcpServiceTypes.js';
-import { builtinTools } from './prompt/prompts.js';
 import { RawToolParamsObj } from './sendLLMMessageTypes.js';
 
 
@@ -89,9 +88,4 @@ export type ToolResult<T extends BuiltinToolName | (string & {})> = T extends Bu
 
 export type BuiltinToolName = keyof BuiltinToolResultType
 
-type BuiltinToolParamNameOfTool<T extends BuiltinToolName> = keyof (typeof builtinTools)[T]['params']
-export type BuiltinToolParamName = { [T in BuiltinToolName]: BuiltinToolParamNameOfTool<T> }[BuiltinToolName]
-
-
 export type ToolName = BuiltinToolName | (string & {})
-export type ToolParamName<T extends ToolName> = T extends BuiltinToolName ? BuiltinToolParamNameOfTool<T> : string

@@ -1,0 +1,18 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"incremental": true,
+		"tsBuildInfoFile": "../out/vs/workbench/contrib/void/.tsbuildinfo",
+		"skipLibCheck": true,
+		"noEmitOnError": false,
+		"noEmit": false
+	},
+	"include": [
+		"./vs/workbench/contrib/void/**/*.ts"
+	],
+	"exclude": [
+		"./vs/workbench/contrib/void/**/react/**",
+		"./vs/workbench/contrib/void/**/out/**"
+	]
+}
+

@@ -11,7 +11,7 @@ import { ILanguageFeaturesService } from '../../../../editor/common/services/lan
 import { ITextModelService } from '../../../../editor/common/services/resolverService.js';
 import { Range } from '../../../../editor/common/core/range.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
-import { CodeActionContext, CodeActionTriggerType } from '../../../../editor/common/languages.js';
+import { CodeAction, CodeActionContext, CodeActionTriggerType } from '../../../../editor/common/languages.js';
 import { URI } from '../../../../base/common/uri.js';
 import * as dom from '../../../../base/browser/dom.js';
 
@@ -75,13 +75,13 @@ class MarkerCheckService extends Disposable implements IMarkerCheckService {
 
 								if (actions?.actions?.length) {
 
-									const quickFixes = actions.actions.filter(action => action.isPreferred);  // ! all quickFixes for the error
+									const quickFixes = actions.actions.filter((action: CodeAction) => action.isPreferred);  // ! all quickFixes for the error
 									// const quickFixesForImports = actions.actions.filter(action => action.isPreferred && action.title.includes('import'));  // ! all possible imports
 									// quickFixesForImports
 
 									if (quickFixes.length > 0) {
 										console.log('Available Quick Fixes:');
-										quickFixes.forEach(action => {
+										quickFixes.forEach((action: CodeAction) => {
 											console.log(`- ${action.title}`);
 										});
 									}

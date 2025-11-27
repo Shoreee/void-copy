@@ -1,6 +1,6 @@
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Position } from '../../../../editor/common/core/position.js';
-import { DocumentSymbol, SymbolKind } from '../../../../editor/common/languages.js';
+import { DocumentSymbol, Location, SymbolKind } from '../../../../editor/common/languages.js';
 import { ITextModel } from '../../../../editor/common/model.js';
 import { ILanguageFeaturesService } from '../../../../editor/common/services/languageFeatures.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
@@ -248,7 +248,7 @@ class ContextGatheringService extends Disposable implements IContextGatheringSer
 					try {
 						const refs = await provider.provideReferences(model, pos, { includeDeclaration: true }, CancellationToken.None);
 						if (refs) {
-							const filtered = refs.filter(ref => this._rangesIntersect(ref.range, range));
+							const filtered = refs.filter((ref: Location) => this._rangesIntersect(ref.range, range));
 							for (const ref of filtered) {
 								symbols.push({
 									name: word,

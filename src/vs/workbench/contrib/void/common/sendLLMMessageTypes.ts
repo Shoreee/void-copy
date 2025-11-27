@@ -3,8 +3,8 @@
  *  Licensed under the Apache License, Version 2.0. See LICENSE.txt for more information.
  *--------------------------------------------------------------------------------------*/
 
-import { InternalToolInfo } from './prompt/prompts.js'
-import { ToolName, ToolParamName } from './toolsServiceTypes.js'
+import { InternalToolInfo } from './prompt/index.js'
+import { ToolName } from './toolsServiceTypes.js'
 import { ChatMode, ModelSelection, ModelSelectionOptions, OverridesOfModel, ProviderName, RefreshableProviderName, SettingsOfProvider } from './voidSettingsTypes.js'
 
 
@@ -79,12 +79,12 @@ export type LLMFIMMessage = {
 
 
 export type RawToolParamsObj = {
-	[paramName in ToolParamName<ToolName>]?: string;
+	[paramName: string]: string | undefined;
 }
 export type RawToolCallObj = {
 	name: ToolName;
 	rawParams: RawToolParamsObj;
-	doneParams: ToolParamName<ToolName>[];
+	doneParams: string[];
 	id: string;
 	isDone: boolean;
 };

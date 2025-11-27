@@ -6,7 +6,7 @@ import { INotificationService } from '../../../../platform/notification/common/n
 import { IFileService } from '../../../../platform/files/common/files.js';
 import { IClipboardService } from '../../../../platform/clipboard/common/clipboardService.js';
 import { IDirectoryStrService } from '../common/directoryStrService.js';
-import { messageOfSelection } from '../common/prompt/prompts.js';
+import { messageOfSelection } from '../common/prompt/index.js';
 import { IVoidModelService } from '../common/voidModelService.js';
 
 

@@ -53,30 +53,28 @@ compile_once() {
     # Create output directory if it doesn't exist
     mkdir -p out/vs/workbench/contrib/void
 
-    # Find all TypeScript files in void directory (excluding react and out)
+    # Count files for progress indication
     VOID_FILES=$(find src/vs/workbench/contrib/void -name "*.ts" -not -path "*/react/*" -not -path "*/out/*" 2>/dev/null)
-
     if [ -z "$VOID_FILES" ]; then
         echo "⚠️  No TypeScript files found in void directory"
         return
     fi
-
-    # Count files for progress indication
     FILE_COUNT=$(echo "$VOID_FILES" | wc -l)
     echo "📝 Found $FILE_COUNT TypeScript files to compile"
 
-    # Compile all void files using TypeScript compiler with project config
-    # This ensures preserveConstEnums and other VS Code-specific settings are used
-    # TypeScript will automatically resolve dependencies from the entire project
-    # Using incremental compilation for faster subsequent builds
-    echo "$VOID_FILES" | xargs -r npx tsc \
-        --project src/tsconfig.json \
-        --rootDir src \
-        --outDir out/vs \
-        --incremental \
-        --tsBuildInfoFile out/vs/workbench/contrib/void/.tsbuildinfo \
-        --skipLibCheck \
-        2>&1 | grep -E "(error TS[0-9]+|Error|Found [0-9]+ error)" || echo "✅ Compilation completed (no errors)"
+    # Compile using dedicated void tsconfig (only void directory)
+    # noEmitOnError: false ensures .js files are generated even if dependencies have type errors
+    COMPILE_OUTPUT=$(npx tsc --project src/tsconfig.void.json 2>&1)
+
+    # Filter to only show void directory errors (the ones we care about)
+    VOID_ERRORS=$(echo "$COMPILE_OUTPUT" | grep -E "src/vs/workbench/contrib/void/.*error TS[0-9]+")
+
+    if [ -n "$VOID_ERRORS" ]; then
+        echo "❌ Errors in void directory:"
+        echo "$VOID_ERRORS"
+    else
+        echo "✅ No errors in void directory!"
+    fi
 
     echo "✅ Void TypeScript compilation complete!"
 }
