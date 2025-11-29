@@ -211,6 +211,48 @@ export const builtinTools: {
 		name: 'kill_persistent_terminal',
 		description: `中断并关闭你使用 open_persistent_terminal 打开的持久终端。`,
 		params: { persistent_terminal_id: { description: `持久终端的 ID。` } }
+	},
+
+	web_search: {
+		name: 'web_search',
+		description: `使用 Exa 的嵌入搜索在网上查找与给定查询相关的网页。返回标题、URL 和内容摘要。`,
+		params: {
+			query: { description: '搜索查询字符串。' },
+			num_results: { description: '可选。返回结果数量，默认为 5。' }
+		}
+	},
+
+	web_get_contents: {
+		name: 'web_get_contents',
+		description: `获取一个或多个网页的干净、解析后的文本内容。用于深入阅读特定网页。`,
+		params: {
+			urls: { description: '要获取内容的 URL 数组。' }
+		}
+	},
+
+	web_find_similar: {
+		name: 'web_find_similar',
+		description: `根据给定的 URL，查找并返回内容相似的网页。用于发现相关资源。`,
+		params: {
+			url: { description: '参考网页的 URL。' },
+			num_results: { description: '可选。返回结果数量，默认为 5。' }
+		}
+	},
+
+	web_answer: {
+		name: 'web_answer',
+		description: `使用 Exa 的 Answer API 直接回答问题，返回答案和引用来源。`,
+		params: {
+			question: { description: '要回答的问题。' }
+		}
+	},
+
+	web_research: {
+		name: 'web_research',
+		description: `自动化深入的网页研究，返回带有引用的结构化研究结果。适用于复杂问题的深入调研。`,
+		params: {
+			query: { description: '研究主题或问题。' }
+		}
 	}
 
 } satisfies { [T in keyof BuiltinToolResultType]: InternalToolInfo }

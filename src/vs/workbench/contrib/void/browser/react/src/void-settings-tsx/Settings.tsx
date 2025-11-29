@@ -1339,6 +1339,26 @@ export const Settings = () => {
 											</div>
 										</div>
 
+										{/* Web Search (Exa) Section */}
+										<div>
+											<h4 className={`text-base`}>Web Search (Exa)</h4>
+											<div className='text-sm text-void-fg-3 mt-1'>
+												<ChatMarkdownRender string={`Enable web search tools powered by [Exa.ai](https://exa.ai). Get your [API Key here](https://dashboard.exa.ai/api-keys).`} chatMessageLocation={undefined} />
+											</div>
+
+											<div className='my-2'>
+												<ErrorBoundary>
+													<VoidSimpleInputBox
+														value={settingsState.globalSettings.exaApiKey}
+														onChangeValue={(newVal) => voidSettingsService.setGlobalSetting('exaApiKey', newVal)}
+														placeholder='Exa API Key (exa-...)'
+														passwordBlur={true}
+														compact={true}
+													/>
+												</ErrorBoundary>
+											</div>
+										</div>
+
 
 
 										<div className='w-full'>

@@ -1,6 +1,7 @@
 import { URI } from '../../../../base/common/uri.js'
 import { RawMCPToolCall } from './mcpServiceTypes.js';
 import { RawToolParamsObj } from './sendLLMMessageTypes.js';
+import { ExaSearchResult, ExaCitation, ExaFinding } from './exaServiceTypes.js';
 
 
 
@@ -59,6 +60,12 @@ export type BuiltinToolCallParams = {
 	'open_persistent_terminal': { cwd: string | null },
 	'run_persistent_command': { command: string; persistentTerminalId: string },
 	'kill_persistent_terminal': { persistentTerminalId: string },
+	// --- Exa web tools ---
+	'web_search': { query: string, numResults: number | null },
+	'web_get_contents': { urls: string[] },
+	'web_find_similar': { url: string, numResults: number | null },
+	'web_answer': { question: string },
+	'web_research': { query: string },
 }
 
 // RESULT OF TOOL CALL
@@ -80,6 +87,12 @@ export type BuiltinToolResultType = {
 	'run_persistent_command': { result: string; resolveReason: TerminalResolveReason; },
 	'open_persistent_terminal': { persistentTerminalId: string },
 	'kill_persistent_terminal': {},
+	// --- Exa web tools ---
+	'web_search': { results: ExaSearchResult[] },
+	'web_get_contents': { contents: Array<{ url: string; text: string; }> },
+	'web_find_similar': { results: ExaSearchResult[] },
+	'web_answer': { answer: string; citations: ExaCitation[] },
+	'web_research': { summary: string; findings: ExaFinding[] },
 }
 
 

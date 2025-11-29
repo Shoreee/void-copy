@@ -19,6 +19,7 @@ import { RawToolParamsObj } from '../common/sendLLMMessageTypes.js'
 import { MAX_CHILDREN_URIs_PAGE, MAX_FILE_CHARS_PAGE, MAX_TERMINAL_BG_COMMAND_TIME, MAX_TERMINAL_INACTIVE_TIME } from '../common/prompt/index.js'
 import { IVoidSettingsService } from '../common/voidSettingsService.js'
 import { generateUuid } from '../../../../base/common/uuid.js'
+import { IExaService } from '../common/exaService.js'
 
 
 // tool use for AI
@@ -153,6 +154,7 @@ export class ToolsService implements IToolsService {
 		@IDirectoryStrService private readonly directoryStrService: IDirectoryStrService,
 		@IMarkerService private readonly markerService: IMarkerService,
 		@IVoidSettingsService private readonly voidSettingsService: IVoidSettingsService,
+		@IExaService private readonly exaService: IExaService,
 	) {
 		const queryBuilder = instantiationService.createInstance(QueryBuilder);
 
@@ -288,6 +290,52 @@ export class ToolsService implements IToolsService {
 				const { persistent_terminal_id: terminalIdUnknown } = params;
 				const persistentTerminalId = validateProposedTerminalId(terminalIdUnknown);
 				return { persistentTerminalId };
+			},
+
+			web_search: (params: RawToolParamsObj) => {
+				const { query: queryUnknown, num_results: numResultsUnknown } = params;
+				const query = validateStr('query', queryUnknown);
+				const numResults = validateNumber(numResultsUnknown, { default: 5 });
+				return { query, numResults };
+			},
+			web_get_contents: (params: RawToolParamsObj) => {
+				const urlsUnknown = params['urls'];
+				if (!urlsUnknown) throw new Error('urls is required');
+				let urls: string[];
+				if (typeof urlsUnknown === 'string') {
+					// Try to parse as JSON array or treat as single URL
+					try {
+						const parsed = JSON.parse(urlsUnknown);
+						if (Array.isArray(parsed)) {
+							urls = parsed.map((u: unknown) => String(u));
+						} else {
+							urls = [urlsUnknown];
+						}
+					} catch {
+						urls = [urlsUnknown];
+					}
+				} else if (Array.isArray(urlsUnknown)) {
+					urls = (urlsUnknown as unknown[]).map((u: unknown) => String(u));
+				} else {
+					throw new Error('urls must be a string or array');
+				}
+				return { urls };
+			},
+			web_find_similar: (params: RawToolParamsObj) => {
+				const { url: urlUnknown, num_results: numResultsUnknown } = params;
+				const url = validateStr('url', urlUnknown);
+				const numResults = validateNumber(numResultsUnknown, { default: 5 });
+				return { url, numResults };
+			},
+			web_answer: (params: RawToolParamsObj) => {
+				const { question: questionUnknown } = params;
+				const question = validateStr('question', questionUnknown);
+				return { question };
+			},
+			web_research: (params: RawToolParamsObj) => {
+				const { query: queryUnknown } = params;
+				const query = validateStr('query', queryUnknown);
+				return { query };
 			},
 
 		}
@@ -461,6 +509,31 @@ export class ToolsService implements IToolsService {
 				await this.terminalToolService.killPersistentTerminal(persistentTerminalId)
 				return { result: {} }
 			},
+
+			web_search: async ({ query, numResults }) => {
+				const result = await this.exaService.search(query, numResults ?? 5);
+				return { result: { results: result.results } };
+			},
+
+			web_get_contents: async ({ urls }) => {
+				const result = await this.exaService.getContents(urls);
+				return { result: { contents: result.contents } };
+			},
+
+			web_find_similar: async ({ url, numResults }) => {
+				const result = await this.exaService.findSimilar(url, numResults ?? 5);
+				return { result: { results: result.results } };
+			},
+
+			web_answer: async ({ question }) => {
+				const result = await this.exaService.answer(question);
+				return { result: { answer: result.answer, citations: result.citations } };
+			},
+
+			web_research: async ({ query }) => {
+				const result = await this.exaService.research(query);
+				return { result: { summary: result.summary, findings: result.findings } };
+			},
 		}
 
 
@@ -563,6 +636,53 @@ export class ToolsService implements IToolsService {
 			},
 			kill_persistent_terminal: (params, _result) => {
 				return `Successfully closed terminal "${params.persistentTerminalId}".`;
+			},
+
+			web_search: (params, result) => {
+				if (!result.results || result.results.length === 0) {
+					return `No results found for query: "${params.query}"`;
+				}
+				return result.results.map((r, i) =>
+					`${i + 1}. ${r.title}\n   URL: ${r.url}${r.text ? `\n   Summary: ${r.text.substring(0, 300)}${r.text.length > 300 ? '...' : ''}` : ''}`
+				).join('\n\n');
+			},
+
+			web_get_contents: (params, result) => {
+				if (!result.contents || result.contents.length === 0) {
+					return `No content retrieved for the provided URLs.`;
+				}
+				return result.contents.map((c) =>
+					`URL: ${c.url}\n\`\`\`\n${c.text.substring(0, 3000)}${c.text.length > 3000 ? '\n...(truncated)' : ''}\n\`\`\``
+				).join('\n\n');
+			},
+
+			web_find_similar: (params, result) => {
+				if (!result.results || result.results.length === 0) {
+					return `No similar pages found for: "${params.url}"`;
+				}
+				return `Similar pages to ${params.url}:\n\n` + result.results.map((r, i) =>
+					`${i + 1}. ${r.title}\n   URL: ${r.url}${r.text ? `\n   Summary: ${r.text.substring(0, 300)}${r.text.length > 300 ? '...' : ''}` : ''}`
+				).join('\n\n');
+			},
+
+			web_answer: (params, result) => {
+				let response = `Answer: ${result.answer}`;
+				if (result.citations && result.citations.length > 0) {
+					response += '\n\nSources:\n' + result.citations.map((c, i) =>
+						`${i + 1}. ${c.title} - ${c.url}`
+					).join('\n');
+				}
+				return response;
+			},
+
+			web_research: (params, result) => {
+				let response = `Research Summary:\n${result.summary}`;
+				if (result.findings && result.findings.length > 0) {
+					response += '\n\nFindings:\n' + result.findings.map((f, i) =>
+						`${i + 1}. ${f.title}\n   ${f.content.substring(0, 500)}${f.content.length > 500 ? '...' : ''}${f.sources.length > 0 ? `\n   Sources: ${f.sources.join(', ')}` : ''}`
+					).join('\n\n');
+				}
+				return response;
 			},
 		}
 
