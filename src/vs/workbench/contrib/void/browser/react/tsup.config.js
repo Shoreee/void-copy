@@ -15,7 +15,7 @@ export default defineConfig({
 		'./src2/quick-edit-tsx/index.tsx',
 		'./src2/diff/index.tsx',
 	],
-	outDir: '../../../../../../../out/vs/workbench/contrib/void/browser/react/out',
+	outDir: './out',
 	format: ['esm'],
 	splitting: false,
 

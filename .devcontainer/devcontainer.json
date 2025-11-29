@@ -5,7 +5,10 @@
 	},
 	"features": {},
 	"containerEnv": {
-		"DISPLAY": "", // Allow the Dev Containers extension to set DISPLAY, post-create.sh will add it back in ~/.bashrc and ~/.zshrc if not set.
+		"DISPLAY": ":0",
+		"WAYLAND_DISPLAY": "wayland-0",
+		"XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir",
+		"PULSE_SERVER": "/mnt/wslg/PulseServer",
 		"NODE_OPTIONS": "--max-old-space-size=16384"
 	},
 	"overrideCommand": false,
@@ -15,6 +18,16 @@
 			"source": "vscode-dev",
 			"target": "/vscode-dev",
 			"type": "volume"
+		},
+		{
+			"source": "/tmp/.X11-unix",
+			"target": "/tmp/.X11-unix",
+			"type": "bind"
+		},
+		{
+			"source": "/mnt/wslg",
+			"target": "/mnt/wslg",
+			"type": "bind"
 		}
 	],
 	"postCreateCommand": "./.devcontainer/post-create.sh",
