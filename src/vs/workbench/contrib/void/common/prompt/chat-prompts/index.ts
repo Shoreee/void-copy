@@ -10,6 +10,7 @@ import { buildSysInfo, buildFsInfo, formatImportantDetails } from './base.js';
 import { chatModeConfig } from './chat-mode.js';
 import { askModeConfig } from './ask-mode.js';
 import { agentModeConfig } from './agent-mode.js';
+import { studyModeConfig } from './study-mode.js';
 
 // Re-export types and base utilities
 export * from './types.js';
@@ -28,6 +29,7 @@ export const modeRegistry: ChatModeRegistry = {
 	chat: chatModeConfig,
 	ask: askModeConfig,
 	agent: agentModeConfig,
+	study: studyModeConfig,
 }
 
 /**

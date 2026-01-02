@@ -20,6 +20,8 @@ import { MAX_CHILDREN_URIs_PAGE, MAX_FILE_CHARS_PAGE, MAX_TERMINAL_BG_COMMAND_TI
 import { IVoidSettingsService } from '../common/voidSettingsService.js'
 import { generateUuid } from '../../../../base/common/uuid.js'
 import { IExaService } from '../common/exaService.js'
+import { IFlowEditorService } from './flowEditorService.js'
+import { FLOW_MARKER_START } from './flowEditorTypes.js'
 
 
 // tool use for AI
@@ -155,6 +157,7 @@ export class ToolsService implements IToolsService {
 		@IMarkerService private readonly markerService: IMarkerService,
 		@IVoidSettingsService private readonly voidSettingsService: IVoidSettingsService,
 		@IExaService private readonly exaService: IExaService,
+		@IFlowEditorService private readonly flowEditorService: IFlowEditorService,
 	) {
 		const queryBuilder = instantiationService.createInstance(QueryBuilder);
 
@@ -463,6 +466,17 @@ export class ToolsService implements IToolsService {
 				if (this.commandBarService.getStreamState(uri) === 'streaming') {
 					throw new Error(`Another LLM is currently making changes to this file. Please stop streaming for now and ask the user to resume later.`)
 				}
+
+				// Check if content contains flow markers (for study mode)
+				if (newContent.includes(FLOW_MARKER_START)) {
+					// Start a flow editor session
+					const sessionId = await this.flowEditorService.startSession(uri.fsPath, newContent);
+					if (sessionId) {
+						// Return empty lintErrors for flow session (file was still written)
+						return { result: Promise.resolve({ lintErrors: null }) };
+					}
+				}
+
 				await editCodeService.callBeforeApplyOrEdit(uri)
 				editCodeService.instantlyRewriteFile({ uri, newContent })
 				// at end, get lint errors
