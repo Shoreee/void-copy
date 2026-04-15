@@ -271,12 +271,10 @@ export const availableTools = (chatMode: ChatMode | null, mcpTools: InternalTool
 	const builtinToolNames: BuiltinToolName[] | undefined = chatMode === 'chat' ? undefined
 		: chatMode === 'ask' ? (Object.keys(builtinTools) as BuiltinToolName[]).filter(toolName => !(toolName in approvalTypeOfBuiltinToolName))
 			: chatMode === 'agent' ? Object.keys(builtinTools) as BuiltinToolName[]
-				: chatMode === 'study' ? Object.keys(builtinTools) as BuiltinToolName[]  // Study mode has same tools as agent
-					: undefined
+				: undefined
 
 	const effectiveBuiltinTools = builtinToolNames?.map(toolName => builtinTools[toolName]) ?? undefined
-	// MCP tools available for both agent and study modes
-	const effectiveMCPTools = (chatMode === 'agent' || chatMode === 'study') ? mcpTools : undefined
+	const effectiveMCPTools = chatMode === 'agent' ? mcpTools : undefined
 
 	const tools: InternalToolInfo[] | undefined = !(builtinToolNames || mcpTools) ? undefined
 		: [

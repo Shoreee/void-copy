@@ -23,7 +23,6 @@ import { MCPServer } from '../../../../common/mcpServiceTypes.js';
 import { useMCPServiceState } from '../util/services.js';
 import { OPT_OUT_KEY } from '../../../../common/storageKeys.js';
 import { StorageScope, StorageTarget } from '../../../../../../../platform/storage/common/storage.js';
-import { StudyProfileSettings } from './StudyProfileSettings.js';
 
 type Tab =
 	| 'models'
@@ -32,7 +31,6 @@ type Tab =
 	| 'featureOptions'
 	| 'mcp'
 	| 'general'
-	| 'study'
 	| 'all';
 
 
@@ -1044,7 +1042,6 @@ export const Settings = () => {
 		{ tab: 'featureOptions', label: 'Feature Options' },
 		{ tab: 'general', label: 'General' },
 		{ tab: 'mcp', label: 'MCP' },
-		{ tab: 'study', label: 'Study Profile' },
 		{ tab: 'all', label: 'All Settings' },
 	];
 	const shouldShowTab = (tab: Tab) => selectedSection === 'all' || selectedSection === tab;
@@ -1572,16 +1569,7 @@ Use Model Context Protocol to provide Agent mode with more tools.
 								</ErrorBoundary>
 							</div>
 
-							{/* Study Profile section */}
-							<div className={shouldShowTab('study') ? `` : 'hidden'}>
-								<ErrorBoundary>
-									<h2 className='text-3xl mb-2'>Study Profile</h2>
-									<h4 className={`text-void-fg-3 mb-4`}>
-										Configure your learning profile for personalized teaching in Study mode.
-									</h4>
-									<StudyProfileSettings />
-								</ErrorBoundary>
-							</div>
+
 
 
 

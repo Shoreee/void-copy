@@ -38,11 +38,7 @@ import { removeMCPToolNamePrefix } from '../../../../common/mcpServiceTypes.js';
 
 
 
-import { IconX, IconArrowUp, IconSquare, IconWarning, IconLoading, IconChat, IconAsk, IconAgent, IconStudy, IconEdit } from '../icons/custom-icons.js';
-import { StudyModeRenderer } from '../study-mode/StudyModeRenderer.js';
-import { MissionRadar, BackgroundTaskState } from '../study-mode/MissionRadar.js';
-import { BackgroundTaskContent, CoCreateContent, parseStudyModeOutput, extractCurriculum } from '../../../../common/studyModeParser.js';
-import type { CoCreationSession } from '../../../studyCoCreationService.js';
+import { IconX, IconArrowUp, IconSquare, IconWarning, IconLoading, IconChat, IconAsk, IconAgent } from '../icons/custom-icons.js';
 
 
 
@@ -158,11 +154,6 @@ const modeAppearanceConfig = {
 		name: 'Agent',
 		icon: IconAgent,
 		backgroundColor: '#70598F'
-	},
-	'study': {
-		name: 'Study',
-		icon: IconStudy,
-		backgroundColor: '#2DD4BF'  // Teal/Cyan blue color
 	}
 }
 
@@ -178,7 +169,7 @@ const ChatModeDropdownWithIcons = ({ className }: { className: string }) => {
 	const config = modeAppearanceConfig[currentMode]
 	const Icon = config.icon
 
-	const options: ChatMode[] = useMemo(() => ['chat', 'ask', 'agent', 'study'], [])
+	const options: ChatMode[] = useMemo(() => ['chat', 'ask', 'agent'], [])
 	const dropdownRef = useRef<HTMLDivElement>(null)
 	const [placement, setPlacement] = useState<'top' | 'bottom'>('top')
 
@@ -1092,6 +1083,9 @@ const UserMessageComponent = ({ chatMessage, messageIdx, isCheckpointGhost, curr
 
 	}
 
+	const EditSymbol = mode === 'display' ? Pencil : X
+
+
 	let chatbubbleContents: React.ReactNode
 	if (mode === 'display') {
 		chatbubbleContents = <>
@@ -1207,43 +1201,30 @@ const UserMessageComponent = ({ chatMessage, messageIdx, isCheckpointGhost, curr
 
 
 
-		{/* Edit button - always visible in bottom-right corner when in display mode */}
-		{mode === 'display' ? (
-			<div
-				className="absolute -bottom-1 -right-1 z-1"
-				data-tooltip-id='void-tooltip'
-				data-tooltip-content='Edit and resend'
-				data-tooltip-place='left'
-			>
-				<IconEdit
-					size={14}
-					className="cursor-pointer text-void-fg-3 opacity-50 hover:opacity-100 transition-opacity duration-200"
-					onClick={(e) => {
-						e.stopPropagation();
-						onOpenEdit();
-					}}
-				/>
-			</div>
-		) : (
-			<div
-				className="absolute -top-1 -right-1 z-1"
-				data-tooltip-id='void-tooltip'
-				data-tooltip-content='Cancel edit'
-				data-tooltip-place='left'
-			>
-				<X
-					size={18}
-					className={`
-						cursor-pointer
-						p-[2px]
-						bg-void-bg-1 border border-void-border-1 rounded-md
-						transition-opacity duration-200 ease-in-out
-						${isHovered || isFocused ? 'opacity-100' : 'opacity-0'}
-					`}
-					onClick={onCloseEdit}
-				/>
-			</div>
-		)}
+		<div
+			className="absolute -top-1 -right-1 translate-x-0 -translate-y-0 z-1"
+		// data-tooltip-id='void-tooltip'
+		// data-tooltip-content='Edit message'
+		// data-tooltip-place='left'
+		>
+			<EditSymbol
+				size={18}
+				className={`
+                    cursor-pointer
+                    p-[2px]
+                    bg-void-bg-1 border border-void-border-1 rounded-md
+                    transition-opacity duration-200 ease-in-out
+                    ${isHovered || (isFocused && mode === 'edit') ? 'opacity-100' : 'opacity-0'}
+                `}
+				onClick={() => {
+					if (mode === 'display') {
+						onOpenEdit()
+					} else if (mode === 'edit') {
+						onCloseEdit()
+					}
+				}}
+			/>
+		</div>
 
 
 	</div>
@@ -2472,17 +2453,13 @@ const builtinToolNameToComponent: { [T in BuiltinToolName]: { resultWrapper: Res
 const Checkpoint = ({ message, threadId, messageIdx, isCheckpointGhost, threadIsRunning }: { message: CheckpointEntry, threadId: string; messageIdx: number, isCheckpointGhost: boolean, threadIsRunning: boolean }) => {
 	const accessor = useAccessor()
 	const chatThreadService = accessor.get('IChatThreadService')
-	const backgroundTaskService = accessor.get('IBackgroundTaskService')
 	const streamState = useFullChatThreadsStreamState()
 
 	const isRunning = useChatThreadsStreamState(threadId)?.isRunning
 	const isDisabled = useMemo(() => {
 		if (isRunning) return true
-		// Exclude background threads from blocking the UI
-		return !!Object.keys(streamState).find((threadId2) =>
-			streamState[threadId2]?.isRunning && !backgroundTaskService.isBackgroundThread(threadId2)
-		)
-	}, [isRunning, streamState, backgroundTaskService])
+		return !!Object.keys(streamState).find((threadId2) => streamState[threadId2]?.isRunning)
+	}, [isRunning, streamState])
 
 	return <div
 		className={`flex items-center justify-center px-2 `}
@@ -2528,13 +2505,11 @@ type ChatBubbleProps = {
 	_scrollToBottom: (() => void) | null,
 }
 
-export const ChatBubble = (props: ChatBubbleProps) => {
+const ChatBubble = (props: ChatBubbleProps) => {
 	return <ErrorBoundary>
 		<_ChatBubble {...props} />
 	</ErrorBoundary>
 }
-
-export type { ChatBubbleProps }
 
 const _ChatBubble = ({ threadId, chatMessage, currCheckpointIdx, isCommitted, messageIdx, chatIsRunning, _scrollToBottom }: ChatBubbleProps) => {
 	const role = chatMessage.role
@@ -2595,8 +2570,13 @@ const _ChatBubble = ({ threadId, chatMessage, currCheckpointIdx, isCommitted, me
 	}
 
 	else if (role === 'checkpoint') {
-		// Hidden - checkpoint functionality is now integrated into user message edit button
-		return null
+		return <Checkpoint
+			threadId={threadId}
+			message={chatMessage}
+			messageIdx={messageIdx}
+			isCheckpointGhost={isCheckpointGhost}
+			threadIsRunning={!!chatIsRunning}
+		/>
 	}
 
 }
@@ -2966,232 +2946,6 @@ export const SidebarChat = () => {
 		await chatThreadsService.abortRunning(threadId)
 	}
 
-	// Get study profile service for timeout tracking
-	const studyProfileService = accessor.get('IStudyProfileService')
-
-	// Handle QTE selection in study mode - sends the selection as a user message
-	// meta.wasTimeout indicates if user timed out vs actively selected
-	const handleQTESelect = useCallback(async (qteId: string, optionId: string, meta?: { wasTimeout?: boolean }) => {
-		if (isRunning) return
-
-		const threadId = chatThreadsService.state.currentThreadId
-
-		// Different messages for timeout vs active selection
-		let userMessage: string
-		if (meta?.wasTimeout) {
-			// Track consecutive timeouts
-			const timeoutCount = studyProfileService.recordTimeoutEvent()
-
-			// Check if we've hit the threshold for auto-summary
-			if (timeoutCount >= 3) {
-				userMessage = `[系统提示：用户连续${timeoutCount}次未响应QTE，请立即进入总结模式]
-
-请注意：
-1. 用户可能已经走神或遇到困难
-2. 请停止继续教授新内容
-3. 对当前已学内容进行简短总结
-4. 询问用户是否需要休息或调整学习节奏
-5. 等待用户主动回复后再继续
-
-这是一个重要的教学暂停点。`
-			} else {
-				// User didn't respond in time - might be distracted or confused
-				userMessage = `[系统提示：用户在限时内未主动选择，自动选择了选项 ${optionId.toUpperCase()}（连续${timeoutCount}次超时）]
-这可能表示：
-1. 用户正在分心，需要重新吸引注意力
-2. 用户对这个问题感到困惑，可能需要更详细的解释
-3. 用户犹豫不决，可能需要更多信息来做决定
-
-请根据上下文判断情况，并适当调整后续的教学节奏。`
-			}
-		} else {
-			// User actively made a choice - reset timeout counter
-			studyProfileService.resetTimeoutCounter()
-			userMessage = `我选择了选项 ${optionId.toUpperCase()}。请继续教学。`
-		}
-
-		try {
-			await chatThreadsService.addUserMessageAndStreamResponse({ userMessage, threadId })
-		} catch (e) {
-			console.error('Error while sending QTE selection:', e)
-		}
-	}, [chatThreadsService, isRunning, studyProfileService])
-
-	// Background task state for study mode
-	const backgroundTaskService = accessor.get('IBackgroundTaskService')
-	const [backgroundTask, setBackgroundTask] = useState<BackgroundTaskState | null>(null)
-	// Track processed background tasks to prevent duplicate creation
-	const processedTasksRef = useRef<Set<string>>(new Set())
-
-	// Listen to background task changes
-	useEffect(() => {
-		const updateTask = () => {
-			const task = backgroundTaskService.currentTask
-			if (task) {
-				setBackgroundTask({
-					type: task.type,
-					status: task.status,
-					description: task.description,
-				})
-			} else {
-				setBackgroundTask(null)
-			}
-		}
-		updateTask()
-		const disposable = backgroundTaskService.onDidChangeTask(updateTask)
-		return () => disposable.dispose()
-	}, [backgroundTaskService])
-
-	// Handle background task trigger from StudyModeRenderer
-	const handleBackgroundTaskTrigger = useCallback((taskContent: BackgroundTaskContent) => {
-		const threadId = chatThreadsService.state.currentThreadId
-
-		// Generate a unique task ID based on content to prevent duplicates
-		const taskContentId = `${threadId}:${taskContent.type}:${taskContent.description}:${taskContent.trigger}`
-
-		// Check if this task has already been processed
-		if (processedTasksRef.current.has(taskContentId)) {
-			console.log('[BackgroundTask] Skipping duplicate task:', taskContentId)
-			return
-		}
-
-		// Mark as processed
-		processedTasksRef.current.add(taskContentId)
-
-		// Limit the processed set size to prevent memory issues
-		if (processedTasksRef.current.size > 100) {
-			const entries = Array.from(processedTasksRef.current)
-			processedTasksRef.current = new Set(entries.slice(-50))
-		}
-
-		console.log('[BackgroundTask] Creating new task:', taskContentId)
-
-		// Start the background task
-		const taskId = backgroundTaskService.startTask({
-			type: taskContent.type,
-			trigger: taskContent.trigger,
-			description: taskContent.description,
-			context: taskContent.context,
-			parentThreadId: threadId,
-		})
-
-		// Update status to running
-		backgroundTaskService.updateTaskStatus(taskId, 'running')
-
-		// Create a background thread and send the task
-		const bgThreadId = chatThreadsService.createBackgroundThread()
-
-		// Send task to background thread
-		const taskMessage = `[后台任务] 类型: ${taskContent.type}
-描述: ${taskContent.description}
-上下文: ${taskContent.context}
-
-请执行此任务并报告结果。`
-
-		chatThreadsService.sendMessageToBackgroundThread({
-			threadId: bgThreadId,
-			userMessage: taskMessage,
-		}).then(() => {
-			// Mark task as complete when background thread finishes
-			backgroundTaskService.updateTaskStatus(taskId, 'complete', {
-				success: true,
-				summary: '任务已完成',
-			})
-			// Clear after a short delay to show completion
-			setTimeout(() => {
-				backgroundTaskService.clearCompletedTask()
-			}, 2000)
-		}).catch((error) => {
-			backgroundTaskService.updateTaskStatus(taskId, 'failed', {
-				success: false,
-				summary: `任务失败: ${error.message}`,
-			})
-		})
-	}, [chatThreadsService, backgroundTaskService])
-
-	// Co-creation service state for study mode
-	const coCreationService = accessor.get('IStudyCoCreationService')
-	const [coCreationSession, setCoCreationSession] = useState<CoCreationSession | null>(null)
-
-	// Listen to co-creation session changes
-	useEffect(() => {
-		const updateSession = () => {
-			setCoCreationSession(coCreationService.currentSession)
-		}
-		updateSession()
-		const disposable = coCreationService.onDidChangeSession(updateSession)
-		return () => disposable.dispose()
-	}, [coCreationService])
-
-	// Note: We no longer reset co-creation state when thread changes
-	// The service now tracks processed content per-thread, so re-opening a conversation
-	// won't re-trigger already processed co-create blocks
-
-	// Listen to co-creation completion - just log for now, don't auto-send to LLM
-	// Auto-sending messages was causing input blocking issues
-	useEffect(() => {
-		const handleComplete = (result: { outcome: string; skill: string; timeTaken: number }) => {
-			console.log('[SidebarChat] Co-creation completed:', result.outcome, result.skill, 'time:', result.timeTaken.toFixed(1), 's')
-			// Note: We don't auto-send feedback to LLM here as it blocks input
-			// The user can continue the conversation manually
-		}
-		const disposable = coCreationService.onDidComplete(handleComplete)
-		return () => disposable.dispose()
-	}, [coCreationService])
-
-	// Listen to teacher feedback requests - this is triggered when user abandons co-creation
-	useEffect(() => {
-		const handleFeedbackRequest = (event: { sessionId: string; skill: string; feedbackMessage: string }) => {
-			console.log('[SidebarChat] Teacher feedback requested:', event.skill, event.feedbackMessage)
-			// Send the feedback message to the LLM as a system notification
-			// This allows the AI to adjust its teaching strategy
-			const feedbackContext = `[系统通知 - 学习进度反馈]\n${event.feedbackMessage}\n\n请根据以上反馈调整教学策略，可以考虑：简化当前概念的讲解、提供更多示例、或暂时跳过这个练习继续其他内容。`
-			chatThreadsService.addUserMessageAndStreamResponse({
-				userMessage: feedbackContext,
-				threadId: currentThread.id
-			}).catch(err => {
-				console.error('[SidebarChat] Failed to send teacher feedback:', err)
-			})
-		}
-		const disposable = coCreationService.onNeedTeacherFeedback(handleFeedbackRequest)
-		return () => disposable.dispose()
-	}, [coCreationService, chatThreadsService, currentThread.id])
-
-	// Handle co-creation trigger from StudyModeRenderer
-	const handleCoCreateTrigger = useCallback((content: CoCreateContent) => {
-		const contentId = `${content.file}:${content.line}:${content.skill}`
-		const threadId = currentThread.id
-
-		// Check if already processed for this thread (handled by service, but double-check)
-		if (coCreationService.isContentProcessed(threadId, contentId)) {
-			console.log('[SidebarChat] Content already processed, skipping:', contentId)
-			return
-		}
-
-		// Check if same session already exists
-		const currentSession = coCreationService.currentSession
-		if (currentSession) {
-			const currentId = `${currentSession.file}:${currentSession.line}:${currentSession.skill}`
-			if (currentId === contentId) {
-				return
-			}
-		}
-
-		coCreationService.startSession(content, threadId)
-	}, [coCreationService, currentThread.id])
-
-	// Handle co-creation skip
-	const handleCoCreateSkip = useCallback(() => {
-		if (coCreationSession) {
-			coCreationService.skipSession(coCreationSession.id)
-		}
-	}, [coCreationService, coCreationSession])
-
-	// Handle co-creation focus
-	const handleCoCreateFocus = useCallback(() => {
-		coCreationService.focusCoCreationLocation()
-	}, [coCreationService])
-
 	const keybindingString = accessor.get('IKeybindingService').lookupKeybinding(VOID_CTRL_L_ACTION_ID)?.getLabel()
 
 	const threadId = currentThread.id
@@ -3259,124 +3013,7 @@ export const SidebarChat = () => {
 			: null
 		: null
 
-	// Check if we're in study mode
-	const isStudyMode = settingsState.globalSettings.chatMode === 'study'
-
-	// Build messages array for study mode including streaming content
-	const studyModeMessages = useMemo(() => {
-		const msgs = [...previousMessages]
-		// Add streaming message if there's content
-		if (displayContentSoFar || reasoningSoFar) {
-			msgs.push({
-				role: 'assistant' as const,
-				displayContent: displayContentSoFar ?? '',
-				reasoning: reasoningSoFar ?? '',
-				anthropicReasoning: null,
-			})
-		}
-		return msgs
-	}, [previousMessages, displayContentSoFar, reasoningSoFar])
-
-	// Study mode uses a different renderer
-	// Extract curriculum for MissionRadar (needs to be outside scroll container)
-	const studyCurriculum = useMemo(() => {
-		if (!isStudyMode) return null;
-		for (let i = studyModeMessages.length - 1; i >= 0; i--) {
-			const message = studyModeMessages[i];
-			if (message.role !== 'assistant') continue;
-			const textContent = message.displayContent;
-			if (!textContent) continue;
-			const parsed = parseStudyModeOutput(textContent);
-			const curriculum = extractCurriculum(parsed);
-			if (curriculum && curriculum.steps.length > 0) {
-				return curriculum;
-			}
-		}
-		return null;
-	}, [isStudyMode, studyModeMessages]);
-
-	const studyCurrentStepInfo = useMemo(() => {
-		if (!studyCurriculum) {
-			return { currentStep: 0, totalSteps: 0, stepName: 'Getting started...' };
-		}
-		const currentStepIdx = studyCurriculum.steps.findIndex(s => s.status === 'current');
-		const completedCount = studyCurriculum.steps.filter(s => s.status === 'complete').length;
-		return {
-			currentStep: completedCount,
-			totalSteps: studyCurriculum.steps.length,
-			stepName: currentStepIdx >= 0
-				? `Step ${currentStepIdx + 1}: ${studyCurriculum.steps[currentStepIdx]?.title}`
-				: completedCount === studyCurriculum.steps.length
-					? '✅ All steps complete!'
-					: 'Learning in progress...',
-		};
-	}, [studyCurriculum]);
-
-	const studyModeMessagesHTML = isStudyMode ? (
-		<div className="flex flex-col w-full flex-1 min-h-0 overflow-hidden">
-			{/* MissionRadar - Fixed at top, outside scroll container */}
-			{studyCurriculum && studyCurriculum.steps.length > 0 && (
-				<MissionRadar
-					currentStep={studyCurrentStepInfo.currentStep}
-					totalSteps={studyCurrentStepInfo.totalSteps}
-					stepName={studyCurrentStepInfo.stepName}
-					steps={studyCurriculum.steps}
-					backgroundTask={backgroundTask}
-				/>
-			)}
-
-			{/* Scrollable message area */}
-			<ScrollToBottomContainer
-				key={'study-messages' + chatThreadsState.currentThreadId}
-				scrollContainerRef={scrollContainerRef}
-				className={`
-					flex flex-col flex-1 min-h-0
-					w-full
-					overflow-x-hidden
-					overflow-y-auto
-					${previousMessages.length === 0 && !displayContentSoFar ? 'hidden' : ''}
-				`}
-			>
-				<StudyModeRenderer
-					messages={studyModeMessages}
-					threadId={threadId}
-					isStreaming={!!isRunning}
-					chatIsRunning={isRunning}
-					currCheckpointIdx={currCheckpointIdx}
-					onQTESelect={handleQTESelect}
-					onBackgroundTaskTrigger={handleBackgroundTaskTrigger}
-					backgroundTask={backgroundTask}
-					onCoCreateTrigger={handleCoCreateTrigger}
-					coCreationSession={coCreationSession}
-					onCoCreateSkip={handleCoCreateSkip}
-					onCoCreateFocus={handleCoCreateFocus}
-					hideMissionRadar={true}
-				/>
-
-				{/* loading indicator for study mode */}
-				{isRunning === 'LLM' || isRunning === 'idle' && !toolIsGenerating ? <div className='px-4'>
-					<IconLoading className='opacity-50 text-sm' />
-				</div> : null}
-
-				{/* error message */}
-				{latestError === undefined ? null :
-					<div className='px-2 my-1'>
-						<ErrorDisplay
-							message={latestError.message}
-							fullError={latestError.fullError}
-							onDismiss={() => { chatThreadsService.dismissStreamError(currentThread.id) }}
-							showDismiss={true}
-						/>
-
-						<WarningBox className='text-sm my-2 mx-4' onClick={() => { commandService.executeCommand(VOID_OPEN_SETTINGS_ACTION_ID) }} text='Open settings' />
-					</div>
-				}
-			</ScrollToBottomContainer>
-		</div>
-	) : null
-
-	// Standard mode renderer
-	const standardMessagesHTML = <ScrollToBottomContainer
+	const messagesHTML = <ScrollToBottomContainer
 		key={'messages' + chatThreadsState.currentThreadId} // force rerender on all children if id changes
 		scrollContainerRef={scrollContainerRef}
 		className={`
@@ -3415,9 +3052,6 @@ export const SidebarChat = () => {
 			</div>
 		}
 	</ScrollToBottomContainer>
-
-	// Use study mode or standard mode based on current mode
-	const messagesHTML = isStudyMode ? studyModeMessagesHTML : standardMessagesHTML
 
 
 	const onChangeText = useCallback((newStr: string) => {

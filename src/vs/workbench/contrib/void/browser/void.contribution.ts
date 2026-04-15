@@ -64,14 +64,6 @@ import './fileService.js'
 // register source control management
 import './voidSCMService.js'
 
-// register Study Mode services
-import './studyQTEService.js'
-import './studyCodeLensService.js'
-import './studyProfileService.js'
-import './backgroundTaskService.js'
-import './studyCoCreationService.js'
-import './flowEditorService.js'
-
 // ---------- common (unclear if these actually need to be imported, because they're already imported wherever they're used) ----------
 
 // llmMessage

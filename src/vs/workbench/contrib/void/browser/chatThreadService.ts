@@ -291,10 +291,6 @@ export interface IChatThreadService {
 
 	focusCurrentChat: () => Promise<void>
 	blurCurrentChat: () => Promise<void>
-
-	// Background thread support
-	createBackgroundThread(customThreadId?: string): string;
-	sendMessageToBackgroundThread(opts: { threadId: string, userMessage: string }): Promise<void>;
 }
 
 export const IChatThreadService = createDecorator<IChatThreadService>('voidChatThreadService');
@@ -1678,53 +1674,6 @@ We only need to do it for files that were edited since `from`, ie files between 
 		}
 		this._storeAllThreads(newThreads)
 		this._setState({ allThreads: newThreads })
-	}
-
-	// ============== Background Thread Support ==============
-
-	/**
-	 * Create a background thread for parallel task execution
-	 * Does NOT switch currentThreadId - the thread runs silently
-	 * @param customThreadId Optional custom thread ID (e.g., 'bg-xxx')
-	 * @returns The created thread ID
-	 */
-	createBackgroundThread(customThreadId?: string): string {
-		const { allThreads: currentThreads } = this.state
-
-		const now = new Date().toISOString()
-		const newThread: ThreadType = {
-			id: customThreadId || `bg-${generateUuid()}`,
-			createdAt: now,
-			lastModified: now,
-			messages: [],
-			state: {
-				currCheckpointIdx: null,
-				stagingSelections: [],
-				focusedMessageIdx: undefined,
-				linksOfMessageIdx: {},
-			},
-			filesWithUserChanges: new Set()
-		}
-
-		const newThreads: ChatThreads = {
-			...currentThreads,
-			[newThread.id]: newThread
-		}
-		this._storeAllThreads(newThreads)
-		// Note: We do NOT change currentThreadId - this is a background thread
-		this._setState({ allThreads: newThreads }, true)
-
-		return newThread.id
-	}
-
-	/**
-	 * Send a message to a background thread and stream response
-	 * This runs independently of the current thread
-	 */
-	async sendMessageToBackgroundThread(opts: { threadId: string, userMessage: string }): Promise<void> {
-		const { threadId, userMessage } = opts
-		// Use the existing addUserMessageAndStreamResponse but for the background thread
-		await this.addUserMessageAndStreamResponse({ userMessage, threadId })
 	}
 
 

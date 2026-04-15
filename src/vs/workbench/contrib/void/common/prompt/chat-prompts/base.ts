@@ -138,7 +138,7 @@ ${workspaceFolders.join('\n') || '未打开文件夹'}
 ${activeURI}
 
 - 已打开的文件:
-${openedURIs.join('\n') || '未打开文件'}${(mode === 'agent' || mode === 'study') && persistentTerminalIDs.length !== 0 ? `
+${openedURIs.join('\n') || '未打开文件'}${mode === 'agent' && persistentTerminalIDs.length !== 0 ? `
 
 - 可供你运行命令的持久终端 ID: ${persistentTerminalIDs.join(', ')}` : ''}
 </system_info>`
